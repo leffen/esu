@@ -23,3 +23,11 @@ func New(scheme, host, port string) *EsConnection {
 
 	return &connection
 }
+
+// NewByUrl Creates a  ES connection object based on elastic url
+func NewByUrl(url string) *EsConnection {
+	connection := EsConnection{}
+	connection.Client = connectToES(url)
+
+	return &connection
+}

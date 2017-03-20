@@ -24,8 +24,8 @@ func getConnectionURL(scheme, host, port string) *url.URL {
 func connectToES(uri string) (es *elastic.Client) {
 	es, err := elastic.NewClient(
 		elastic.SetURL(uri),
-		elastic.SetSniff(false),       // esu might not be able to ping other nodes
-		elastic.SetHealthcheck(false), // healthchecks are a skosh overkill for a CLI tool
+		elastic.SetSniff(false),
+		elastic.SetHealthcheck(false),
 	)
 
 	if err != nil {
