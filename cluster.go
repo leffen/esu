@@ -144,10 +144,10 @@ func (cn *EsConnection) getClusterStats() {
 		t = NewTable("Nodes", "")
 		if res.Nodes.Count != nil {
 			t.Add("Count", res.Nodes.Count.Total)
-			t.Add("Client", res.Nodes.Count.Client)
-			t.Add("Master", res.Nodes.Count.MasterOnly)
-			t.Add("Data", res.Nodes.Count.DataOnly)
-			t.Add("Master + Data", res.Nodes.Count.MasterData)
+			t.Add("Data", res.Nodes.Count.Data)
+			t.Add("CoordinatingOnly", res.Nodes.Count.CoordinatingOnly)
+			t.Add("Master", res.Nodes.Count.Master)
+			t.Add("Ingest", res.Nodes.Count.Ingest)
 			t.Add()
 		}
 
