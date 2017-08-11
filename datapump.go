@@ -2,6 +2,7 @@ package esu
 
 import (
 	"context"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 
@@ -68,7 +69,19 @@ func (pump *Datapump) Listen(lc chan PumpData, ec chan int) {
 
 	rows := 0
 
-	p, err := client.BulkProcessor().Name("Eliot importer").BulkActions(pump.BulkActions).BulkSize(1000000000).Workers(pump.BulkWorkers).Stats(true).Do(ctx)
+	p, err := client.BulkProcessor().
+		Name("ESUImporter").
+		BulkActions(pump.BulkActions).
+		BulkSize(1000000000).
+		Workers(pump.BulkWorkers).
+		Stats(true).
+		After(func(executionId int64, requests []elastic.BulkableRequest, response *elastic.BulkResponse, err error) {
+			if err != nil {
+				log.Errorf("Bulk error %s\n", err)
+			}
+		}).
+		Do(ctx)
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -76,47 +89,59 @@ func (pump *Datapump) Listen(lc chan PumpData, ec chan int) {
 	for {
 		data := <-lc
 		if data.IsEOF {
+			log.Infoln("Finished signal received ")
 			break
 		}
 		req := elastic.NewBulkIndexRequest().Index(pump.Index).Type(pump.IndexType).Id(data.UID).Doc(data.JSON)
 		p.Add(req)
-		if err != nil {
-			log.Fatal(err)
-		}
+		//	fmt.Println(req.Source())
+
 		rows++
 		if rows%100000 == 0 {
 			log.Debugln("Datapump", rows)
+			err = p.Flush()
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 
 	}
+	time.Sleep(2 * time.Second)
 
+	log.Infoln("Flushing the index")
 	err = p.Flush()
 	if err != nil {
 		log.Fatal(err)
 	}
+	p.Stop()
 
+	log.Infoln("Resetting resfresh interval to 1s")
 	pump.setRefreshInterval(pump.Index, "1s")
 
 	printBulkStats(p)
 
-	p.Close()
+	err = p.Close()
+	if err != nil {
+		log.Errorln("Bulk insert close", err)
+	}
+
 	ec <- 1
 }
 
 func printBulkStats(p *elastic.BulkProcessor) {
 	stats := p.Stats()
 
-	log.Debugf("Number of times flush has been invoked: %d\n", stats.Flushed)
-	log.Debugf("Number of times workers committed reqs: %d\n", stats.Committed)
-	log.Debugf("Number of requests indexed            : %d\n", stats.Indexed)
-	log.Debugf("Number of requests reported as created: %d\n", stats.Created)
-	log.Debugf("Number of requests reported as updated: %d\n", stats.Updated)
-	log.Debugf("Number of requests reported as success: %d\n", stats.Succeeded)
-	log.Debugf("Number of requests reported as failed : %d\n", stats.Failed)
+	log.Infof("Number of times flush has been invoked: %d\n", stats.Flushed)
+	log.Infof("Number of times workers committed reqs: %d\n", stats.Committed)
+	log.Infof("Number of requests indexed            : %d\n", stats.Indexed)
+	log.Infof("Number of requests reported as created: %d\n", stats.Created)
+	log.Infof("Number of requests reported as updated: %d\n", stats.Updated)
+	log.Infof("Number of requests reported as success: %d\n", stats.Succeeded)
+	log.Infof("Number of requests reported as failed : %d\n", stats.Failed)
 
 	for i, w := range stats.Workers {
-		log.Debugf("Worker %d: Number of requests queued: %d\n", i, w.Queued)
-		log.Debugf("           Last response time       : %v\n", w.LastDuration)
+		log.Infof("Worker %d: Number of requests queued: %d\n", i, w.Queued)
+		log.Infof("           Last response time       : %v\n", w.LastDuration)
 	}
 }
 
