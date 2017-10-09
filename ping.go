@@ -7,7 +7,7 @@ import (
 
 func (cn *EsConnection) Ping() {
 	ctxb := context.Background()
-	uri := cn.URL.String()
+	uri := cn.URLs[0].String()
 	res, _, err := cn.Client.Ping(uri).Do(ctxb)
 
 	if err != nil {

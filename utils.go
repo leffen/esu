@@ -21,9 +21,13 @@ func getConnectionURL(scheme, host, port string) *url.URL {
 	}
 }
 
-func connectToES(uri string) (es *elastic.Client) {
+func connectToES(urls []*url.URL) (es *elastic.Client) {
+	var uris []string
+	for _, u := range urls {
+		uris = append(uris, u.String())
+	}
 	es, err := elastic.NewClient(
-		elastic.SetURL(uri),
+		elastic.SetURL(uris...),
 		elastic.SetSniff(false),
 		elastic.SetHealthcheck(false),
 	)
