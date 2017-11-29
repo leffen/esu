@@ -6,7 +6,7 @@ import (
 	elastic "gopkg.in/olivere/elastic.v5"
 )
 
-const VERSION = "0.2.0"
+const VERSION = "0.2.1"
 
 // EsConnection is a container for elasticsearch connection information
 type EsConnection struct {
