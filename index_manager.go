@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	logger "github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
+	logger "github.com/sirupsen/logrus"
 	context "golang.org/x/net/context"
 	elastic "gopkg.in/olivere/elastic.v5"
 )
